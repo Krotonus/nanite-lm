@@ -9,3 +9,6 @@
 *.ipynb_checkpoints/ # If you use Jupyter notebooks
 __pycache__/
 .vscode/
+
+# Editor configs
+nanite.sublime-workspace
