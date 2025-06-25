@@ -1,2 +1,11 @@
-.env/*
-.venv/*
+# Python virtual environments
+.env/
+.venv/
+
+# Cached files
+*.pyc
+*.pyo
+*.pyd
+*.ipynb_checkpoints/ # If you use Jupyter notebooks
+__pycache__/
+.vscode/
