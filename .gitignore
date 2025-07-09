@@ -1,14 +1,18 @@
 # Python virtual environments
-.env/*
+.env*
 .venv/*
 
 # Cached files
 *.pyc
 *.pyo
 *.pyd
-*.ipynb_checkpoints/ # If you use Jupyter notebooks
+*/.ipynb_checkpoints/*  # If you use Jupyter notebooks
+.ipynb_checkpoints/*
+experiments/baseline_transformer/configs/.ipynb_checkpoints/*
+codebase/.ipynb_checkpoints/*
 __pycache__/
 .vscode/
+wandb/*
 
 # Editor configs
 nanite.sublime-workspace

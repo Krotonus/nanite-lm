@@ -134,7 +134,9 @@ def validate_train_args(args: TrainArgs, output_size: int):
     assert args.dump_dir, "Dump dir not set"
 
     if args.checkpoint.path is None:
-        logger.info(f"Setting checkpoint path to {str(Path(args.dump_dir) / 'checkpoints')}")
+        logger.info(
+            f"Setting checkpoint path to {str(Path(args.dump_dir) / 'checkpoints')}"
+        )
         args.checkpoint.path = str(Path(args.dump_dir) / "checkpoints")
 
     for source in args.data.sources:
@@ -238,7 +240,10 @@ def train(args: TrainArgs):
         dp_degree = dp_mesh.size()
         dp_rank = dp_mesh.get_local_rank()
         if args.distributed.dp_shard > 1:
-            dp_rank = dp_rank * world_mesh["dp_shard"].size() + world_mesh["dp_shard"].get_local_rank()
+            dp_rank = (
+                dp_rank * world_mesh["dp_shard"].size()
+                + world_mesh["dp_shard"].get_local_rank()
+            )
             dp_degree *= world_mesh["dp_shard"].size()
 
         logger.info(f"Running on dp rank : {dp_rank}")
@@ -273,8 +278,10 @@ def train(args: TrainArgs):
 
         if args.checkpoint.init_ckpt_path:
             logger.info(f"Loading initial model from {args.checkpoint.init_ckpt_path}")
-            load_from_checkpoint(args.checkpoint.init_ckpt_path, model, model_key="model") # Put model_key="" if its directly the model checkpoint
-            model.rope_embeddings.reset_parameters() # For RoPe initialization since it's a buffer it might not be loaded
+            load_from_checkpoint(
+                args.checkpoint.init_ckpt_path, model, model_key="model"
+            )  # Put model_key="" if its directly the model checkpoint
+            model.rope_embeddings.reset_parameters()  # For RoPe initialization since it's a buffer it might not be loaded
         else:
             with torch.random.fork_rng(devices=[torch.cuda.current_device()]):
                 torch.manual_seed(args.model.seed)
@@ -430,7 +437,9 @@ def train(args: TrainArgs):
                 )
 
                 grad_norm = (
-                    grad_norm.full_tensor() if isinstance(grad_norm, DTensor) else grad_norm
+                    grad_norm.full_tensor()
+                    if isinstance(grad_norm, DTensor)
+                    else grad_norm
                 ).item()
 
                 optimizer.step()
@@ -537,9 +546,10 @@ def train(args: TrainArgs):
                     device_mesh=world_mesh,
                 )
 
-            if args.eval is not None and (every_n_steps(
-                train_state, args.checkpoint.eval.every, acc_step=0
-            ) or every_n_steps(train_state, args.steps, acc_step=0)):
+            if args.eval is not None and (
+                every_n_steps(train_state, args.checkpoint.eval.every, acc_step=0)
+                or every_n_steps(train_state, args.steps, acc_step=0)
+            ):
                 from experiments.baseline_transformer.eval import (
                     launch_eval,
                     EVAL_FOLDER_NAME,

@@ -43,7 +43,8 @@ SBATCH_COMMAND = """#!/bin/bash
 #SBATCH --job-name={name}
 #SBATCH --nodes={nodes}
 #SBATCH --gres=gpu:{ngpus}
-#SBATCH --cpus-per-gpu={ncpu}
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task={ncpu}
 #SBATCH --time={time}
 #SBATCH --partition={partition}
 #SBATCH --mem={mem}
@@ -56,7 +57,7 @@ SBATCH_COMMAND = """#!/bin/bash
 #SBATCH --distribution=block
 
 # Mimic the effect of "conda init", which doesn't work for scripts
-eval "$({conda_exe} shell.bash hook)"
+# eval "$({conda_exe} shell.bash hook)"
 source activate {conda_env_path}
 
 {go_to_code_dir}
@@ -205,7 +206,8 @@ def launch_job(args: StoolArgs):
     print("Writing sbatch command ...")
     with open(f"{dump_dir}/submit.slurm", "w") as f:
         f.write(sbatch)
-
+    import pdb; pdb.set_trace()
+    
     print("Submitting job ...")
     os.system(f"{args.launcher} {dump_dir}/submit.slurm")
 
