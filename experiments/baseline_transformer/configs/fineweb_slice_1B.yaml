@@ -1,8 +1,8 @@
-name: 1B
+name: FineWeb_DE_1B
 dump_dir: /home/lama722b/nanite_lm/dumps/09072025
 seed: 777
-grad_acc_steps: 1
-gc_collect_freq: 1000
+grad_acc_steps: 10
+gc_collect_freq: 20
 probe_freq: null
 steps: 60000
 data:
@@ -18,8 +18,8 @@ data:
   load_async: true
   prefetch_size: 1024
   tokenizer:
-    name: bytes
-    path: /home/lama722b/nanite_lm/tokenizers/tokenizer.model
+    name: sp
+    path: /home/lama722b/nanite_lm/tokenizers/gemma/tokenizer.model
 optim:
   lr: 6e-4
   weight_decay: 0.033
@@ -49,7 +49,6 @@ model:
   init_std_factor: disabled
   max_seqlen: 4096
   seed: 42
-  vocab_size: 258
   weight_tying: false
   sliding_window: null
 distributed:
@@ -77,16 +76,13 @@ env:
   TORCH_NCCL_ASYNC_ERROR_HANDLING: '1'
 checkpoint:
   dump:
-    every: 2500
+    every: 20
     keep: 3
-  eval:
-    every: 5000
-    keep: -1
   path: /home/lama722b/nanite_lm/dumps/09072025/checkpoints
   init_ckpt_path: null
   continue_training_from_init: false
 profiling:
-  run: true
+  run: false
   trace_folder: profiling
   mem_warmup: 0
   mem_steps: 4
@@ -118,7 +114,7 @@ logging:
     id: null
     fork_from: null
     resume_from: null
-async_eval_gpus: 1
+
 eval:
   harness:
     tasks:

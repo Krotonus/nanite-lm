@@ -79,23 +79,19 @@ def main(dataset, memory, data_dir, seed=42, nchunks=32):
     repo_id = {
         "en": "HuggingFaceFW/fineweb-edu",
         "de": "HuggingFaceFW/fineweb-2",
+        "redpajama": "togethercomputer/RedPajama-Data-V2",
     }[dataset]
     src_dir = f"{data_dir}/{dataset}"
     out_dir = f"{src_dir}_shuffled"
     os.makedirs(out_dir, exist_ok=True)
     work_dir = src_dir  # Directory of this Python file
     prefix = f"{dataset}.chunk."
-    orig_extension = {
-        "en": ".jsonl",
-        "de": ".jsonl",
-    }[dataset]
-    cat_command = {
-        "en": "cat {}",
-        "de": "cat {}",
-    }[dataset]
+    orig_extension = {"en": ".jsonl", "de": ".jsonl", "redpajama": ".txt"}[dataset]
+    cat_command = {"en": "cat {}", "de": "cat {}", "redpajama": "cat {}"}[dataset]
     allow_patterns = {
         "en": None,
-        "de": "data/deu_Latn/train/000_00000.parquet",
+        "de": "data/deu_Latn/train/*.parquet",
+        "redpajama": "listings/de-*.txt",
     }[dataset]
     suffix = ".jsonl"
     k_validation = 10000  # Number of lines to take from each chunk for validation
@@ -106,7 +102,10 @@ def main(dataset, memory, data_dir, seed=42, nchunks=32):
     # Download dataset
     download_dataset(repo_id, src_dir, allow_patterns)
 
-    parquet_to_jsonl(dataset, work_dir, src_dir, src_dir)
+    if "redpajama" in dataset:
+        txt_to_jsonl(dataset, work_dir, src_dir, src_dir)
+    else:
+        parquet_to_jsonl(dataset, work_dir, src_dir, src_dir)
 
     # Set up environment variables
     os.environ["MEMORY"] = f"{memory}"

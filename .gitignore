@@ -16,3 +16,5 @@ wandb/*
 
 # Editor configs
 nanite.sublime-workspace
+.main.py.swp
+nanite_lm.code-workspace
