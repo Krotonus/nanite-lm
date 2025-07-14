@@ -225,3 +225,29 @@ def get_num_params(model: nn.Module) -> int:
     """
     numel = {n: p.numel() for n, p in model.named_parameters()}
     return sum(numel.values())
+
+
+def get_detailed_param_breakdown(model: nn.Module) -> dict:
+    """
+    Get a detailed breakdown of model parameters.
+
+    Args:
+        model: The PyTorch model.
+
+    Returns:
+        A dictionary with the number of embedding, non-embedding, and total parameters.
+    """
+    param_counts = {"embedding_params": 0, "non_embedding_params": 0, "total_params": 0}
+
+    for name, module in model.named_modules():
+        is_embedding = isinstance(module, nn.Embedding)
+        for param in module.parameters(recurse=False):
+            num_params = param.numel()
+            if is_embedding:
+                param_counts["embedding_params"] += num_params
+            else:
+                param_counts["non_embedding_params"] += num_params
+
+            param_counts["total_params"] += num_params
+
+    return param_counts

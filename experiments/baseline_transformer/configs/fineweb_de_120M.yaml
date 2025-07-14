@@ -1,0 +1,140 @@
+name: FineWeb_DE_1B
+dump_dir: /home/lama722b/nanite_lm/dumps/120m
+seed: 777
+grad_acc_steps: 10
+gc_collect_freq: 500
+probe_freq: null
+steps: 60000
+data:
+  root_dir: /home/lama722b/nanite_lm/data/fineweb
+  sources:
+    de_shuffled: 100.0
+  batch_size: 4
+  seq_len: 4096
+  n_views: 2
+  seed: 42
+  add_bos: true
+  add_eos: true
+  load_async: true
+  prefetch_size: 1024
+  tokenizer:
+    name: sp
+    path: /home/lama722b/nanite_lm/tokenizers/gemma/tokenizer.model
+optim:
+  lr: 6e-4
+  weight_decay: 0.033
+  epsilon: 1.0e-08
+  beta1: 0.9
+  beta2: 0.95
+  clip: 1.0
+  scheduler: cosine
+  warmup: 5000
+  lr_min_ratio: 1.0e-06
+  cycle_length: 1.0
+  cosine_theta: 1.0
+  annealing_step: 1000
+  decay_fraction: 0.1
+  exp_factor: 0.5
+model:
+  dim: 768
+  n_layers: 12
+  head_dim: null
+  n_heads: 12
+  n_kv_heads: null
+  ffn_dim_multiplier: null
+  multiple_of: 256
+  norm_eps: 1.0e-05
+  rope_theta: 10000.0
+  init_base_std: null
+  init_std_factor: disabled
+  max_seqlen: 2048
+  seed: 42
+  weight_tying: false
+  sliding_window: null
+distributed:
+  dp_shard: 1
+  dp_replicate: 1
+  tp_size: 1
+  selective_activation_checkpointing: false
+  compile: true
+  fsdp_type: full_shard
+  model_dtype: bf16
+  float8_recipe: null
+  float8_filter: layers\.[0-9]+\.
+  matmul_allow_tf32: false
+  detect_anomaly: false
+  compile_cache_size_limit: 8
+  spawn_method: forkserver
+env:
+  MKL_SERVICE_FORCE_INTEL: GNU
+  OMP_NUM_THREADS: '1'
+  MKL_NUM_THREADS: '1'
+  ENABLE_INTRA_NODE_COMM: '1'
+  TORCH_NCCL_AVOID_RECORD_STREAMS: '1'
+  NCCL_IB_TIMEOUT: '22'
+  NCCL_DEBUG: INFO
+  TORCH_NCCL_ASYNC_ERROR_HANDLING: '1'
+checkpoint:
+  dump:
+    every: 1000
+    keep: 3
+  path: /home/lama722b/nanite_lm/dumps/120m/checkpoints
+  init_ckpt_path: null
+  continue_training_from_init: false
+profiling:
+  run: true
+  trace_folder: profiling
+  mem_warmup: 0
+  mem_steps: 4
+  profile_warmup: 100
+  profile_steps: 4
+logging:
+  freq: 10
+  acc_freq: null
+  wandb:
+    job_type: null
+    dir: null
+    project: custom_codebase
+    entity: scads-nlp
+    tags: null
+    group: null
+    name: FineWeb_DE_120M
+    notes: null
+    config_exclude_keys: null
+    config_include_keys: null
+    anonymous: null
+    mode: null
+    allow_val_change: null
+    resume: null
+    force: null
+    tensorboard: null
+    sync_tensorboard: null
+    monitor_gym: null
+    save_code: null
+    id: null
+    fork_from: null
+    resume_from: null
+
+eval:
+  harness:
+    tasks:
+    - hellaswag
+    - task: boolq
+      dataset_kwargs:
+        trust_remote_code: true
+    - piqa
+    - task: social_iqa
+      dataset_kwargs:
+        trust_remote_code: true
+    - winogrande
+    - openbookqa
+    - arc_easy
+    - arc_challenge
+    - race
+    - commonsense_qa
+    - copa
+  validation:
+    max_steps: 1000
+  generator:
+    max_tokens: 16384
+    dtype: bf16

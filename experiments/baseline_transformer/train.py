@@ -49,6 +49,7 @@ from codebase.metrics import (
     LoggingArgs,
     MetricLogger,
     get_num_params,
+    get_detailed_param_breakdown,
 )
 from codebase.optim import OptimArgs, build_optimizer
 from codebase.profiling import ProfilerArgs, maybe_run_profiler
@@ -257,7 +258,8 @@ def train(args: TrainArgs):
             model = LMTransformer(args.model)
         logger.info("Model is built !")
 
-        model_param_count = get_num_params(model)
+        # model_param_count = get_num_params(model)
+        model_param_count = get_detailed_param_breakdown(model)
 
         model = parallelize_model(
             model,
@@ -290,7 +292,15 @@ def train(args: TrainArgs):
 
         # log model size
 
-        logger.info(f"Model size: {model_param_count:,} total parameters")
+        logger.info(
+            f"Model size: {model_param_count['total_params']:,} total parameters"
+        )
+        logger.info(
+            f"Model size: {model_param_count['embedding_params']:,} embedding parameters"
+        )
+        logger.info(
+            f"Model size: {model_param_count['non_embedding_params']:,} non-embedding parameters"
+        )
 
         gpu_memory_monitor = GPUMemoryMonitor("cuda")
         logger.info(
@@ -483,7 +493,8 @@ def train(args: TrainArgs):
                 # Use xformer's analyze profile trace to get actual measurement
                 FLOPS = (
                     get_num_flop_per_token(
-                        model_param_count - args.model.vocab_size * args.model.dim,
+                        model_param_count["total_params"]
+                        - args.model.vocab_size * args.model.dim,
                         args.model.n_layers,
                         args.model.dim,
                         args.data.seq_len,
