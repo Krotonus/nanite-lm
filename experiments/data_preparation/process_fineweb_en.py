@@ -74,38 +74,33 @@ def setup_terashuf(work_dir):
     return terashuf_dir
 
 
-def main(dataset, memory, data_dir, seed=42, nchunks=32):
+def main(memory, seed=42, nchunks=32):
     # Configuration
-    repo_id = {
-        "en": "HuggingFaceFW/fineweb-edu",
-        "de": "HuggingFaceFW/fineweb-2",
-        "redpajama": "togethercomputer/RedPajama-Data-V2",
-    }[dataset]
-    src_dir = f"{data_dir}/{dataset}"
+    dataset = "fineweb_en"
+    repo_id = "HuggingFaceFW/fineweb-edu"
+    src_dir = f"/home/lama722b/nanite_lm/data/fineweb-longterm/en"
     out_dir = f"{src_dir}_shuffled"
     os.makedirs(out_dir, exist_ok=True)
-    work_dir = src_dir  # Directory of this Python file
+    work_dir = "/data/horse/ws/lama722b-nanite-lm/slurm_logs/en_lt"
     prefix = f"{dataset}.chunk."
-    orig_extension = {"en": ".jsonl", "de": ".jsonl", "redpajama": ".txt"}[dataset]
-    cat_command = {"en": "cat {}", "de": "cat {}", "redpajama": "cat {}"}[dataset]
-    allow_patterns = {
-        "en": None,
-        "de": "data/deu_Latn/train/*.parquet",
-        "redpajama": "listings/de-*.txt",
-    }[dataset]
+    orig_extension = ".jsonl"
+    cat_command = "cat {}"
+    allow_patterns = "sample/350BT/*"
     suffix = ".jsonl"
     k_validation = 10000  # Number of lines to take from each chunk for validation
 
     # Setup terashuf
-    terashuf_dir = setup_terashuf(work_dir)
+    terashuf_dir = setup_terashuf("/home/lama722b/nanite_lm/data/fineweb-longterm/en")
 
     # Download dataset
     download_dataset(repo_id, src_dir, allow_patterns)
 
-    if "redpajama" in dataset:
-        txt_to_jsonl(dataset, work_dir, src_dir, src_dir)
-    else:
-        parquet_to_jsonl(dataset, work_dir, src_dir, src_dir)
+    parquet_to_jsonl(
+        dataset,
+        work_dir,
+        "/home/lama722b/nanite_lm/data/fineweb/en/sample/350BT/",
+        src_dir,
+    )
 
     # Set up environment variables
     os.environ["MEMORY"] = f"{memory}"
@@ -132,12 +127,10 @@ def main(dataset, memory, data_dir, seed=42, nchunks=32):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("dataset", type=str)
-    parser.add_argument("memory", type=float, default=8)
-    parser.add_argument("--data_dir", type=str, default="data")
+    parser.add_argument("--memory", type=float, default=8)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--nchunks", type=int, default=32)
+    parser.add_argument("--nchunks", type=int, default=1)
 
     args = parser.parse_args()
 
-    main(args.dataset, args.memory, args.data_dir, args.seed, args.nchunks)
+    main(args.memory, args.seed, args.nchunks)
