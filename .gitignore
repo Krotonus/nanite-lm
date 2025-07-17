@@ -19,3 +19,4 @@ wandb/*
 nanite.sublime-workspace
 .main.py.swp
 nanite_lm.code-workspace
+experiments/encoder_models/.ipynb_checkpoints/*
