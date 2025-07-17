@@ -1,14 +1,14 @@
-name: FineWeb_DE_1B
-dump_dir: /home/lama722b/nanite_lm/dumps/09072025
+name: FineWeb_DE_120m
+dump_dir: /home/lama722b/nanite_lm/dumps/14072025
 seed: 777
 grad_acc_steps: 10
-gc_collect_freq: 20
+gc_collect_freq: 500
 probe_freq: null
 steps: 60000
 data:
   root_dir: /home/lama722b/nanite_lm/data/fineweb
   sources:
-    scratch: 100.0
+    de_shuffled: 100.0
   batch_size: 4
   seq_len: 4096
   n_views: 2
@@ -76,13 +76,13 @@ env:
   TORCH_NCCL_ASYNC_ERROR_HANDLING: '1'
 checkpoint:
   dump:
-    every: 20
+    every: 1000
     keep: 3
-  path: /home/lama722b/nanite_lm/dumps/09072025/checkpoints
+  path: /home/lama722b/nanite_lm/dumps/14072025/checkpoints
   init_ckpt_path: null
   continue_training_from_init: false
 profiling:
-  run: false
+  run: true
   trace_folder: profiling
   mem_warmup: 0
   mem_steps: 4

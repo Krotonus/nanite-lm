@@ -1,7 +1,7 @@
-name: FineWeb_DE_1B
+name: FineWeb_DE_120M
 dump_dir: /home/lama722b/nanite_lm/dumps/120m
 seed: 777
-grad_acc_steps: 10
+grad_acc_steps: 128
 gc_collect_freq: 500
 probe_freq: null
 steps: 60000
@@ -9,7 +9,7 @@ data:
   root_dir: /home/lama722b/nanite_lm/data/fineweb
   sources:
     de_shuffled: 100.0
-  batch_size: 4
+  batch_size: 8
   seq_len: 4096
   n_views: 2
   seed: 42
