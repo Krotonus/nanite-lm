@@ -1,15 +1,16 @@
-name: FineWeb_DE_120M
+name: FineWeb_DE_60_EN_40_120M
 dump_dir: /home/lama722b/nanite_lm/dumps/120m
 seed: 777
 grad_acc_steps: 128
 gc_collect_freq: 500
 probe_freq: null
-steps: 60000
+steps: 5000
 data:
   root_dir: /home/lama722b/nanite_lm/data/fineweb
   sources:
-    de_shuffled: 100.0
-  batch_size: 8
+    de_shuffled: 60.0
+    en_shuffled: 40.0
+  batch_size: 4
   seq_len: 4096
   n_views: 2
   seed: 42
@@ -82,7 +83,7 @@ checkpoint:
   init_ckpt_path: null
   continue_training_from_init: false
 profiling:
-  run: true
+  run: false
   trace_folder: profiling
   mem_warmup: 0
   mem_steps: 4
@@ -98,7 +99,7 @@ logging:
     entity: scads-nlp
     tags: null
     group: null
-    name: FineWeb_DE_120M
+    name: FineWeb_DE_EN_120M
     notes: null
     config_exclude_keys: null
     config_include_keys: null

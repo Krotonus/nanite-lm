@@ -15,22 +15,21 @@ class StoolArgs:
     config: Any = None
     launcher: str = "sbatch"  # Can be sbatch or bash if already in salloc
     script: str = "apps.main.train"  # The script to run.
-    copy_code: bool = True  # Wether to copy code to dump dir
+    copy_code: bool = False  # Wether to copy code to dump dir
     dirs_exists_ok: bool = (
-        False  # Wether to copy new code and config and run regardless that dir exists
+        True  # Wether to copy new code and config and run regardless that dir exists
     )
     override: bool = False  # Wether to delete dump dir and restart
-    nodes: int = -1  # The number of nodes to run the job on.
-    ngpu: int = 8  # The number of GPUs required per node.
-    ncpu: int = 16  # The number of CPUs allocated per GPU.
-    mem: str = ""  # The amount of memory to allocate.
-    anaconda: str = "default"  # The path to the anaconda environment.
+    nodes: int = 1  # The number of nodes to run the job on.
+    ngpu: int = 1  # The number of GPUs required per node.
+    ncpu: int = 14  # The number of CPUs allocated per GPU.
+    mem: str = ""  # The amount of memory per cpu to allocate.
+    python_env: str = "default"  # The path to the python environment.
     constraint: str = ""  # The constraint on the nodes.
     exclude: str = ""  # The nodes to exclude.
     time: int = -1  # The time limit of the job (in minutes).
-    account: str = ""
+    account: str = "p_scads_nlp"
     qos: str = ""
-    partition: str = "learn"
     stdout: bool = False
 
 
@@ -42,12 +41,12 @@ SBATCH_COMMAND = """#!/bin/bash
 {constraint}
 #SBATCH --job-name={name}
 #SBATCH --nodes={nodes}
+#SBATCH --hint=nomultithread
 #SBATCH --gres=gpu:{ngpus}
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task={ncpu}
 #SBATCH --time={time}
-#SBATCH --partition={partition}
-#SBATCH --mem={mem}
+#SBATCH --mem-per-cpu={mem}
 
 #SBATCH --output={dump_dir}/logs/%j/%j.stdout
 #SBATCH --error={dump_dir}/logs/%j/%j.stderr
@@ -56,16 +55,15 @@ SBATCH_COMMAND = """#!/bin/bash
 #SBATCH --signal=USR2@120
 #SBATCH --distribution=block
 
-# Mimic the effect of "conda init", which doesn't work for scripts
-# eval "$({conda_exe} shell.bash hook)"
-source activate {conda_env_path}
+# Activate the python environment
+source {python_env_path}/bin/activate
 
 {go_to_code_dir}
 
 export OMP_NUM_THREADS=1
-export LAUNCH_WITH="SBATCH"
+#export LAUNCH_WITH="SBATCH"
 export DUMP_DIR={dump_dir}
-srun {log_output} -n {tasks} -N {nodes_per_run} python -u -m {script} config=$DUMP_DIR/base_config.yaml
+srun --cpu-bind=cores {log_output} -n {tasks} -N {nodes_per_run} python -u -m {script} config=$DUMP_DIR/base_config.yaml
 """
 
 
@@ -127,25 +125,23 @@ def validate_args(args) -> None:
     if getattr(args, "exclude", ""):
         args.exclude = f"#SBATCH --exclude={args.exclude}"
 
-    if hasattr(args, "anaconda") and args.anaconda:
-        if args.anaconda == "default":
-            args.anaconda = (
+    if hasattr(args, "python_env") and args.python_env:
+        if args.python_env == "default":
+            args.python_env = (
                 subprocess.check_output("which python", shell=True)
                 .decode("ascii")
                 .strip()
             )
         else:
-            args.anaconda = f"{args.anaconda}/bin/python"
-        assert os.path.isfile(args.anaconda)
+            args.python_env = f"{args.python_env}/bin/python"
+        assert os.path.isfile(args.python_env)
 
     args.mem = args.mem or "0"
 
-    assert args.partition
     assert args.ngpu > 0
     assert args.ncpu > 0
     assert args.nodes > 0
     assert args.time > 0
-    assert args.partition
 
 
 def launch_job(args: StoolArgs):
@@ -174,8 +170,7 @@ def launch_job(args: StoolArgs):
     with open(f"{dump_dir}/base_config.yaml", "w") as cfg:
         cfg.write(OmegaConf.to_yaml(args.config))
 
-    conda_exe = os.environ.get("CONDA_EXE", "conda")
-    conda_env_path = os.path.dirname(os.path.dirname(args.anaconda))
+    python_env_path = os.path.dirname(os.path.dirname(args.python_env))
     log_output = (
         "-o $DUMP_DIR/logs/%j/%j_%t.out -e $DUMP_DIR/logs/%j/%j_%t.err"
         if not args.stdout
@@ -196,9 +191,7 @@ def launch_job(args: StoolArgs):
         constraint=args.constraint,
         exclude=args.exclude,
         time=args.time,
-        partition=args.partition,
-        conda_exe=conda_exe,
-        conda_env_path=conda_env_path,
+        python_env_path=python_env_path,
         log_output=log_output,
         go_to_code_dir=f"cd {dump_dir}/code/" if args.copy_code else "",
     )
@@ -206,8 +199,7 @@ def launch_job(args: StoolArgs):
     print("Writing sbatch command ...")
     with open(f"{dump_dir}/submit.slurm", "w") as f:
         f.write(sbatch)
-    import pdb; pdb.set_trace()
-    
+
     print("Submitting job ...")
     os.system(f"{args.launcher} {dump_dir}/submit.slurm")
 
