@@ -1,8 +1,12 @@
+from torch import nn
+from torch.optim import AdamW, lr_scheduler
+from dataclasses import asdict, dataclass, field
 from codebase.optim import OptimArgs, build_lr_fn
 
 
+@dataclass
 class MupOptimArgs(OptimArgs):
-    scaling_factor: float = None
+    scaling_factor: float = 1.0
 
 
 def build_mup_optimizer(
@@ -24,7 +28,6 @@ def build_mup_optimizer(
                 or n.endswith("w2.weight")
                 or n.endswith("w3.weight")
             ):
-                print(f"Added {n} to mup_decay_list")
                 mup_decay_params.append(p)
             else:
                 decay_params.append(p)

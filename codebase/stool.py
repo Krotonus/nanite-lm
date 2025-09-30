@@ -31,7 +31,7 @@ class StoolArgs:
     account: str = "p_scads_nlp"
     qos: str = ""
     stdout: bool = False
-
+    go_to_code_dir: str = "" # The cd command root project directory.
 
 SBATCH_COMMAND = """#!/bin/bash
 
@@ -59,6 +59,7 @@ SBATCH_COMMAND = """#!/bin/bash
 source {python_env_path}/bin/activate
 
 {go_to_code_dir}
+echo $(pwd -P)
 
 export OMP_NUM_THREADS=1
 #export LAUNCH_WITH="SBATCH"
@@ -193,7 +194,7 @@ def launch_job(args: StoolArgs):
         time=args.time,
         python_env_path=python_env_path,
         log_output=log_output,
-        go_to_code_dir=f"cd {dump_dir}/code/" if args.copy_code else "",
+        go_to_code_dir=f"cd {args.go_to_code_dir}/" if args.go_to_code_dir else "",
     )
 
     print("Writing sbatch command ...")

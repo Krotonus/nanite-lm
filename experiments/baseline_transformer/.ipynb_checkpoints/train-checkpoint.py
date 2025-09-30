@@ -51,14 +51,12 @@ from codebase.metrics import (
     get_num_params,
     get_detailed_param_breakdown,
 )
-from .optimizer import MupOptimArgs, build_mup_optimizer
+from codebase.optim import OptimArgs, build_optimizer
 from codebase.profiling import ProfilerArgs, maybe_run_profiler
 from codebase.tokenizer import build_tokenizer
-from experiments.mup.transformer import (
-    MupTransformerArgs,
-    MupTransformer,
-)
 from experiments.baseline_transformer.transformer import (
+    LMTransformerArgs,
+    LMTransformer,
     get_num_flop_per_token,
     build_fsdp_grouping_plan,
     tp_parallelize,
@@ -74,7 +72,7 @@ logger = logging.getLogger()
 
 @dataclass
 class TrainArgs:
-    name: str = "mup"
+    name: str = "lingua"
     dump_dir: str = ""
 
     seed: int = 42
@@ -90,8 +88,8 @@ class TrainArgs:
     steps: int = 1000
 
     data: DataArgs = field(default_factory=DataArgs)
-    optim: MupOptimArgs = field(default_factory=MupOptimArgs)
-    model: MupTransformerArgs = field(default_factory=MupTransformerArgs)
+    optim: OptimArgs = field(default_factory=OptimArgs)
+    model: LMTransformerArgs = field(default_factory=LMTransformerArgs)
     distributed: DistributedArgs = field(default_factory=DistributedArgs)
     env: EnvironmentArgs = field(default_factory=EnvironmentArgs)
 
@@ -201,11 +199,6 @@ def validate_train_args(args: TrainArgs, output_size: int):
             args.distributed.selective_activation_checkpointing is False
         ), "Probing not supported with selective activation checkpointing"
 
-    if args.model.scaling_factor is not None and args.optim.scaling_factor is not None:
-        assert (
-            args.model.scaling_factor == args.optim.scaling_factor
-        ), "Need to be the same!"
-
 
 preemption_flag = dict(flag=False)
 
@@ -262,7 +255,7 @@ def train(args: TrainArgs):
 
         # Initializing Model in meta device allows us to initialize models much bigger than 1 gpu's memory
         with torch.device("meta"):
-            model = MupTransformer(args.model)
+            model = LMTransformer(args.model)
         logger.info("Model is built !")
 
         # model_param_count = get_num_params(model)
@@ -294,7 +287,7 @@ def train(args: TrainArgs):
         else:
             with torch.random.fork_rng(devices=[torch.cuda.current_device()]):
                 torch.manual_seed(args.model.seed)
-                model.init_weights(args)
+                model.init_weights()
         check_model_value_range(model, range=10.0, std=1.0)
 
         # log model size
@@ -317,7 +310,7 @@ def train(args: TrainArgs):
         logger.info(f"GPU memory usage: {gpu_memory_monitor}")
 
         # build optimizer after apply parallelisms to the model
-        optimizer, scheduler = build_mup_optimizer(model, args.optim, args.steps)
+        optimizer, scheduler = build_optimizer(model, args.optim, args.steps)
         data_loader_state = init_dataloader_state_from_args(
             args.data, dp_rank, dp_degree
         )
@@ -415,7 +408,7 @@ def train(args: TrainArgs):
                     probe.metadata = {
                         "it": train_state.step,
                         "global_step": train_state.step,
-                        "loop": "mup_coord_check",
+                        "loop": "lingua",
                     }
                     # Non compiled model uses roughly 2x memory in our exps
                     # So we divide bsz by 2 or seqlen by 2

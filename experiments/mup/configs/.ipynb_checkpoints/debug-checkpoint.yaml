@@ -1,0 +1,50 @@
+# Template config, need to change dump_dir, data.root_dir and data.tokenizer.path
+
+dump_dir: /home/lama722b/nanite_lm/dumps/mup_debug
+name: "mup_debug"
+probe_freq: 1
+steps: 10
+seed: 777
+optim:
+    lr: 5e-4
+    warmup: 100
+    lr_min_ratio: 0.000001
+    clip: 10.0
+    scaling_factor: 1.0
+
+distributed:
+    fsdp_type: full_shard
+    compile: true
+    model_dtype: bf16
+    matmul_allow_tf32: false
+    selective_activation_checkpointing: false
+    tp_size: 1
+
+model:
+    dim: 128
+    n_layers: 2
+    n_heads: 4
+    scaling_factor: 1.0
+
+data:
+    root_dir: /home/lama722b/nanite_lm/data/fineweb
+    sources:
+        de_shuffled: 60.0
+        en_shuffled: 40.0
+    batch_size: 4 
+    prefetch_size: 64
+    seq_len: 2048
+    n_views: 2
+    load_async: true
+    tokenizer:
+        name: sp
+        path: /home/lama722b/nanite_lm/tokenizers/gemma/tokenizer.model
+
+logging:
+    freq: 1
+    wandb:
+        project: custom_codebase
+        entity: scads-nlp
+        tags: null
+        group: null
+        name: mup_debug

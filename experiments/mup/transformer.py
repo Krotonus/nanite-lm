@@ -1,8 +1,9 @@
 import math
+from typing import Optional, Union, Tuple
+from dataclasses import asdict, dataclass, field
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
-from torch.optim import AdamW, lr_scheduler
 from xformers.ops import fmha, AttentionBias
 from torch.nn.attention.flex_attention import (
     BlockMask,
@@ -25,9 +26,12 @@ from codebase.transformer import (
     InitStdFactor,
 )
 
+from experiments.baseline_transformer.transformer import create_causal_mask
+
 from codebase.optim import OptimArgs, build_lr_fn
 
 
+@dataclass
 class MupTransformerArgs(BaseTransformerArgs):
     seed = 42
     vocab_size = -1
@@ -35,7 +39,7 @@ class MupTransformerArgs(BaseTransformerArgs):
     sliding_window = None
     input_alpha = 1.0
     output_alpha = 1.0
-    scaling_factor: float = None
+    scaling_factor: float = 1.0
 
 
 class MupAttention(Attention):
@@ -257,7 +261,6 @@ class MupTransformer(BaseTransformer):
         )
         # (krotonus) NOTE: Embedding FWD MUP
         h = self.input_alpha * self.tok_embeddings(token_values)
-
         freq_cis = self.rope_embeddings(seqlen=self.max_seqlen, tok_idx=tok_idx)
 
         for i, layer in enumerate(self.layers):
@@ -269,9 +272,30 @@ class MupTransformer(BaseTransformer):
             return cross_entropy(logits, target)
         else:
             return logits
+            
+    def reset_parameters(self, init_std=None):
+        # Either use fixed base std or sqrt model dim
+        super().reset_parameters()
+        init_std = init_std or (self.dim ** (-0.5))
+        self.norm.reset_parameters()
+        nn.init.trunc_normal_(
+            self.tok_embeddings.weight,
+            mean=0.0,
+            std=init_std,
+            a=-3 * init_std,
+            b=3 * init_std,
+        )
+        if not self.weight_tying:
+            nn.init.trunc_normal_(
+                self.output.weight,
+                mean=0.0,
+                std=init_std,
+                a=-3 * init_std,
+                b=3 * init_std,
+            )
 
-    def init_weights(self):
+    def init_weights(self, args):
         self.reset_parameters()
-        out_proj_factor = math.sqrt(2 * args.n_layers * args.scaling_factor)
+        out_proj_factor = math.sqrt(2 * args.model.n_layers * args.model.scaling_factor)
         for depth, layer in enumerate(self.layers):
             layer.init_weights(self.init_base_std, out_proj_factor)
